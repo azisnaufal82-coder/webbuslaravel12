@@ -1,6 +1,6 @@
 <!-- resources/views/admin/buses/index.blade.php -->
 
-@extends('layouts.admin')
+@extends('layouts.app')
 
 @section('title', 'Manajemen Bus')
 
