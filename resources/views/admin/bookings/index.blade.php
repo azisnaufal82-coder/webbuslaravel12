@@ -1,6 +1,6 @@
 <!-- resources/views/admin/bookings/index.blade.php -->
 
-@extends('layouts.admin')
+@extends('layouts.app')
 
 @section('title', 'Manajemen Pemesanan')
 

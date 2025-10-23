@@ -39,15 +39,17 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
         return view('admin.routes.index');
     })->name('admin.routes.index');
     
-    Route::get('/schedules', function () {
-        return view('admin.schedules.index');
-    })->name('admin.schedules.index');
+    Route::get('/schedules', [ScheduleController::class, 'index'])->name('admin.schedules.index');
     
     Route::get('/bookings', function () {
         return view('admin.bookings.index');
     })->name('admin.bookings.index');
+
+    // HAPUS SEMUA ROUTE USERS YANG ADA, lalu buat yang baru:
+Route::get('/users', function () {
+    $users = \App\Models\User::all();
+    return view('admin.users.index', compact('users'));
+})->name('admin.users.index');
     
-    Route::get('/users', function () {
-        return view('admin.users.index');
-    })->name('admin.users.index');
+  
 });
