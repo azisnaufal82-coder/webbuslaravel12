@@ -3,63 +3,55 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Booking;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Carbon\Carbon;
 
 class BookingController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        $status     = $request->query('status', '');
+        $startDate  = $request->query('start_date', '');
+        $endDate    = $request->query('end_date', '');
+
+        $query = Booking::with(['user', 'schedule.bus', 'schedule.route']);
+
+        if ($status !== '') {
+            $query->where('status', $status);
+        }
+
+        if ($startDate || $endDate) {
+            $query->whereHas('schedule', function ($q) use ($startDate, $endDate) {
+                if ($startDate) {
+                    $q->whereDate('departure_time', '>=', Carbon::parse($startDate)->toDateString());
+                }
+                if ($endDate) {
+                    $q->whereDate('departure_time', '<=', Carbon::parse($endDate)->toDateString());
+                }
+            });
+        }
+
+        $bookings = $query->orderByDesc('id')->paginate(10)->withQueryString();
+
+        return view('admin.bookings.index', compact('bookings', 'status', 'startDate', 'endDate'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function update(Request $request, Booking $booking)
     {
-        //
+        $data = $request->validate([
+            'status' => ['required', Rule::in(['pending', 'confirmed', 'cancelled'])],
+        ]);
+
+        $booking->update($data);
+
+        return back()->with('success', 'Status pemesanan berhasil diperbarui.');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function show(Booking $booking)
     {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        $booking->load(['user', 'schedule.bus', 'schedule.route']);
+        return view('admin.bookings.show', compact('booking'));
     }
 }

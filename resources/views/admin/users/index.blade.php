@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
-@section('styles')
-<!-- Tambahkan Bootstrap Icons -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+@push('styles')
+<!-- Bootstrap Icons (jaga-jaga kalau belum global) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
 .table th {
     border-top: none;
@@ -14,10 +14,11 @@
     box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
 }
 .btn i {
-    font-size: 0.9rem;
+    font-size: 1rem;
+    line-height: 1;
 }
 </style>
-@endsection
+@endpush
 
 @section('content')
 <div class="container-fluid">
@@ -31,6 +32,29 @@
             <i class="bi bi-plus-circle me-1"></i>Tambah User
         </button>
     </div>
+
+    {{-- Flash Messages --}}
+    @if(session('success'))
+        <div class="alert alert-success"><i class="bi bi-check-circle me-2"></i>{{ session('success') }}</div>
+    @endif
+    @if(session('danger'))
+        <div class="alert alert-danger"><i class="bi bi-x-circle me-2"></i>{{ session('danger') }}</div>
+    @endif
+    @if ($errors->any())
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle me-2"></i>Periksa kembali input Anda.
+            <ul class="mb-0 mt-2">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    {{-- Urutkan berdasarkan ID desc (lebih ideal di controller) --}}
+    @php
+        $users = $users->sortByDesc('id');
+    @endphp
 
     <!-- Stats Cards -->
     <div class="row mb-4">
@@ -159,34 +183,33 @@
                                 </td>
                                 <td>
                                     <div class="d-flex justify-content-center gap-2">
-                                        <!-- Tombol Detail -->
-                                        <button class="btn btn-outline-primary btn-sm" 
-                                                data-bs-toggle="modal" 
+                                        <!-- Detail -->
+                                        <button class="btn btn-outline-primary btn-sm"
+                                                data-bs-toggle="modal"
                                                 data-bs-target="#detailModal{{ $user->id }}"
-                                                title="Lihat Detail">
+                                                data-bs-toggle="tooltip" title="Lihat Detail">
                                             <i class="bi bi-eye"></i>
                                         </button>
-                                        
-                                        <!-- Tombol Edit -->
+
+                                        <!-- Edit -->
                                         <button class="btn btn-outline-warning btn-sm"
-                                                data-bs-toggle="modal" 
+                                                data-bs-toggle="modal"
                                                 data-bs-target="#editModal{{ $user->id }}"
-                                                title="Edit User">
+                                                data-bs-toggle="tooltip" title="Edit User">
                                             <i class="bi bi-pencil-square"></i>
                                         </button>
-                                        
-                                        <!-- Tombol Hapus (hanya untuk user lain) -->
+
+                                        <!-- Hapus (selain diri sendiri) -->
                                         @if($user->id !== Auth::id())
                                         <button class="btn btn-outline-danger btn-sm"
-                                                data-bs-toggle="modal" 
+                                                data-bs-toggle="modal"
                                                 data-bs-target="#deleteModal{{ $user->id }}"
-                                                title="Hapus User">
+                                                data-bs-toggle="tooltip" title="Hapus User">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                         @else
-                                        <!-- Untuk user sendiri, tombol disabled -->
                                         <button class="btn btn-outline-secondary btn-sm" disabled
-                                                title="User Aktif (Anda)">
+                                                data-bs-toggle="tooltip" title="User Aktif (Anda)">
                                             <i class="bi bi-person-check"></i>
                                         </button>
                                         @endif
@@ -258,8 +281,8 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="bi bi-x-circle me-1"></i>Tutup
                 </button>
-                <button type="button" class="btn btn-warning" 
-                        data-bs-toggle="modal" 
+                <button type="button" class="btn btn-warning"
+                        data-bs-toggle="modal"
                         data-bs-target="#editModal{{ $user->id }}"
                         data-bs-dismiss="modal">
                     <i class="bi bi-pencil-square me-1"></i>Edit User
@@ -281,20 +304,22 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="editForm{{ $user->id }}">
+            <form id="editForm{{ $user->id }}" method="POST" action="{{ route('admin.users.update', $user->id) }}">
+                @csrf
+                @method('PUT')
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="name{{ $user->id }}" class="form-label">
                             <i class="bi bi-person me-1"></i>Nama
                         </label>
-                        <input type="text" class="form-control" id="name{{ $user->id }}" 
+                        <input type="text" class="form-control" id="name{{ $user->id }}"
                                name="name" value="{{ $user->name }}" required>
                     </div>
                     <div class="mb-3">
                         <label for="email{{ $user->id }}" class="form-label">
                             <i class="bi bi-envelope me-1"></i>Email
                         </label>
-                        <input type="email" class="form-control" id="email{{ $user->id }}" 
+                        <input type="email" class="form-control" id="email{{ $user->id }}"
                                name="email" value="{{ $user->email }}" required>
                     </div>
                     <div class="mb-3">
@@ -311,7 +336,7 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="bi bi-x-circle me-1"></i>Batal
                     </button>
-                    <button type="button" class="btn btn-primary" onclick="handleEditUser({{ $user->id }})">
+                    <button type="submit" class="btn btn-primary">
                         <i class="bi bi-check-circle me-1"></i>Simpan Perubahan
                     </button>
                 </div>
@@ -320,6 +345,52 @@
     </div>
 </div>
 @endforeach
+
+<!-- Modal Tambah User (BARU) -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-person-plus me-2"></i>Tambah Pengguna Baru
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addUserForm" method="POST" action="{{ route('admin.users.store') }}">
+                @csrf
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="name" class="form-label"><i class="bi bi-person me-1"></i>Nama Lengkap</label>
+                        <input type="text" class="form-control" id="name" name="name" required placeholder="Masukkan nama lengkap">
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label"><i class="bi bi-envelope me-1"></i>Email</label>
+                        <input type="email" class="form-control" id="email" name="email" required placeholder="Masukkan alamat email">
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label"><i class="bi bi-lock me-1"></i>Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required placeholder="Masukkan password">
+                    </div>
+                    <div class="mb-3">
+                        <label for="role" class="form-label"><i class="bi bi-person-badge me-1"></i>Role</label>
+                        <select class="form-select" id="role" name="role">
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i>Batal
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>Tambah User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <!-- Modal Hapus -->
 @foreach($users as $user)
@@ -350,240 +421,47 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="bi bi-x-circle me-1"></i>Batal
                 </button>
-                <button type="button" class="btn btn-danger" onclick="handleDeleteUser({{ $user->id }})">
-                    <i class="bi bi-trash me-1"></i>Ya, Hapus
-                </button>
+                <form method="POST" action="{{ route('admin.users.destroy', $user->id) }}" class="d-inline">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-1"></i>Ya, Hapus
+                    </button>
+                </form>
             </div>
         </div>
     </div>
 </div>
 @endif
 @endforeach
-
-<!-- Modal Tambah User -->
-<div class="modal fade" id="addUserModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="bi bi-person-plus me-2"></i>Tambah Pengguna Baru
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="addUserForm">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="name" class="form-label">
-                            <i class="bi bi-person me-1"></i>Nama Lengkap
-                        </label>
-                        <input type="text" class="form-control" id="name" name="name" required 
-                               placeholder="Masukkan nama lengkap">
-                    </div>
-                    <div class="mb-3">
-                        <label for="email" class="form-label">
-                            <i class="bi bi-envelope me-1"></i>Email
-                        </label>
-                        <input type="email" class="form-control" id="email" name="email" required 
-                               placeholder="Masukkan alamat email">
-                    </div>
-                    <div class="mb-3">
-                        <label for="password" class="form-label">
-                            <i class="bi bi-lock me-1"></i>Password
-                        </label>
-                        <input type="password" class="form-control" id="password" name="password" required 
-                               placeholder="Masukkan password">
-                    </div>
-                    <div class="mb-3">
-                        <label for="role" class="form-label">
-                            <i class="bi bi-person-badge me-1"></i>Role
-                        </label>
-                        <select class="form-select" id="role" name="role">
-                            <option value="user">User</option>
-                            <option value="admin">Admin</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="bi bi-x-circle me-1"></i>Batal
-                    </button>
-                    <button type="button" class="btn btn-primary" onclick="handleAddUser()">
-                        <i class="bi bi-plus-circle me-1"></i>Tambah User
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 @endsection
 
-@section('scripts')
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+@push('scripts')
 <script>
-// Inisialisasi ketika dokumen siap
+// Pencarian real-time (pastikan script ini dimuat karena layout pakai @stack('scripts'))
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Halaman Manajemen User dimuat');
-    
-    // Fungsi pencarian real-time
-    const searchInput = document.getElementById('searchInput');
+    const searchInput  = document.getElementById('searchInput');
     const searchButton = document.getElementById('searchButton');
-    
+
     if (searchInput && searchButton) {
         const tableRows = document.querySelectorAll('tbody tr');
-        
+
         function performSearch() {
-            const searchTerm = searchInput.value.toLowerCase();
-            
+            const searchTerm = (searchInput.value || '').toLowerCase();
             tableRows.forEach(row => {
-                const userName = row.cells[1].textContent.toLowerCase();
-                const userEmail = row.cells[2].textContent.toLowerCase();
-                
-                if (userName.includes(searchTerm) || userEmail.includes(searchTerm)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
+                const userName  = (row.cells[1]?.textContent || '').toLowerCase();
+                const userEmail = (row.cells[2]?.textContent || '').toLowerCase();
+                row.style.display = (userName.includes(searchTerm) || userEmail.includes(searchTerm)) ? '' : 'none';
             });
         }
-        
+
         searchInput.addEventListener('input', performSearch);
         searchButton.addEventListener('click', performSearch);
     }
-    
-    // Inisialisasi tooltip
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
-    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
+
+    // Tooltip Bootstrap
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
 });
-
-// Fungsi untuk handle edit user
-function handleEditUser(userId) {
-    const form = document.getElementById('editForm' + userId);
-    if (!form) {
-        console.error('Form edit tidak ditemukan untuk user ID:', userId);
-        return;
-    }
-    
-    const formData = new FormData(form);
-    const userData = {
-        name: formData.get('name'),
-        email: formData.get('email'),
-        role: formData.get('role')
-    };
-    
-    // Validasi sederhana
-    if (!userData.name || !userData.email) {
-        showNotification('Harap isi semua field yang required!', 'warning');
-        return;
-    }
-    
-    // Simulasi update user
-    console.log('Update user:', userId, userData);
-    showNotification(`User "${userData.name}" berhasil diupdate!`, 'success');
-    
-    // Tutup modal
-    const modalElement = document.getElementById('editModal' + userId);
-    if (modalElement) {
-        const modal = bootstrap.Modal.getInstance(modalElement);
-        if (modal) {
-            modal.hide();
-        }
-    }
-}
-
-// Fungsi untuk handle hapus user
-function handleDeleteUser(userId) {
-    const modalElement = document.getElementById('deleteModal' + userId);
-    if (!modalElement) {
-        console.error('Modal hapus tidak ditemukan untuk user ID:', userId);
-        return;
-    }
-    
-    const userName = modalElement.querySelector('.alert strong')?.textContent || 'User';
-    
-    // Konfirmasi sekali lagi
-    if (!confirm(`Anda yakin ingin menghapus user "${userName}"?`)) {
-        return;
-    }
-    
-    // Simulasi delete user
-    console.log('Delete user:', userId);
-    showNotification(`User "${userName}" berhasil dihapus!`, 'success');
-    
-    // Tutup modal
-    const modal = bootstrap.Modal.getInstance(modalElement);
-    if (modal) {
-        modal.hide();
-    }
-}
-
-// Fungsi untuk handle tambah user
-function handleAddUser() {
-    const form = document.getElementById('addUserForm');
-    if (!form) {
-        console.error('Form tambah user tidak ditemukan');
-        return;
-    }
-    
-    const formData = new FormData(form);
-    const userData = {
-        name: formData.get('name'),
-        email: formData.get('email'),
-        password: formData.get('password'),
-        role: formData.get('role')
-    };
-    
-    // Validasi
-    if (!userData.name || !userData.email || !userData.password) {
-        showNotification('Harap isi semua field yang required!', 'warning');
-        return;
-    }
-    
-    // Simulasi tambah user
-    console.log('Add user:', userData);
-    showNotification(`User "${userData.name}" berhasil ditambahkan!`, 'success');
-    
-    // Tutup modal dan reset form
-    const modalElement = document.getElementById('addUserModal');
-    if (modalElement) {
-        const modal = bootstrap.Modal.getInstance(modalElement);
-        if (modal) {
-            modal.hide();
-        }
-    }
-    form.reset();
-}
-
-// Fungsi notifikasi
-function showNotification(message, type = 'success') {
-    // Hapus notifikasi sebelumnya
-    const existingNotifications = document.querySelectorAll('.alert.position-fixed');
-    existingNotifications.forEach(notif => notif.remove());
-    
-    const notification = document.createElement('div');
-    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-    
-    let iconClass = 'bi-check-circle';
-    if (type === 'warning') iconClass = 'bi-exclamation-triangle';
-    if (type === 'danger') iconClass = 'bi-x-circle';
-    
-    notification.innerHTML = `
-        <i class="bi ${iconClass} me-2"></i>
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // Auto remove setelah 5 detik
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.remove();
-        }
-    }, 5000);
-}
 </script>
-@endsection
+@endpush

@@ -1,5 +1,4 @@
 <?php
-// app/Models/Schedule.php
 
 namespace App\Models;
 
@@ -18,37 +17,29 @@ class Schedule extends Model
         'price'
     ];
 
-    protected $casts = [
-        'departure_time' => 'datetime',
-        'arrival_time' => 'datetime'
-    ];
-
+    // Relasi ke BUS
     public function bus()
     {
         return $this->belongsTo(Bus::class);
     }
 
+    // Relasi ke ROUTE
     public function route()
     {
         return $this->belongsTo(Route::class);
     }
 
+    // ✅ Relasi ke BOOKING (WAJIB ADA)
     public function bookings()
     {
         return $this->hasMany(Booking::class);
     }
 
-    public function getAvailableSeatsAttribute()
-    {
-        $bookedSeats = $this->bookings()
-            ->whereIn('status', ['pending', 'confirmed'])
-            ->sum('num_of_seats');
-            
-        return max(0, $this->bus->capacity - $bookedSeats);
-    }
+    protected $casts = [
+    'departure_time' => 'datetime',
+    'arrival_time'   => 'datetime',
+];
 
-    public function getHasAvailableSeatsAttribute()
-    {
-        return $this->available_seats > 0;
-    }
+
+    
 }
